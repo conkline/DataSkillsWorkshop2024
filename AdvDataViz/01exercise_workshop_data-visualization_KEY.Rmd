@@ -1,0 +1,228 @@
+---
+title: "Data_Visualization_KEY"
+author: "Emily Conklin"
+date: "4/30/2024"
+output: html_document
+---
+
+## Exercise 1: Plotting in Base R
+
+Choose a variable of interest and plot it using only base R graphics. Use one (or more) of the following functions:
+plot()
+hist()
+pie()
+barplot()
+boxplot()
+
+See if you can figure out how to change colors, label your axes, or any other customization you'd like. 
+
+If you're stuck, check out these resources:
+https://www.theanalysisfactor.com/tutorial-part-6-basic-plotting-in-r/
+https://www.datamentor.io/r-programming/plot-function/
+https://www.r-graph-gallery.com/210-custom-barplot-layout.html
+
+The starwars dataset is loaded for you, but if you'd prefer a different one,
+R has lots of practice datasets - view them all with data()
+
+```{r Base R Plots}
+
+library(dplyr)
+
+#read in starwars data and look at first few lines
+data(starwars)
+head(starwars)
+
+#sample plots
+hist(starwars$height)
+barplot(table(starwars$gender))
+plot(starwars$height, starwars$mass)
+
+#Now you try! Note that you may run into problems using one of the
+#variables in list format (films, vehicles, or starships)
+
+barplot(table(starwars$homeworld), col = "lightblue") #barplot of homeworlds, changed color
+pie(table(starwars$homeworld)) #pie chart of homeworlds
+plot(x = starwars$birth_year, y = starwars$height, 
+     xlab = "SW Birth Year", ylab = "SW Height") #scatterplot of height vs. birth year, added axis labels
+
+```
+
+## Exercise 2: Simple plots in ggplot2
+
+Below is a short exercise to start getting used to the ggplot2 syntax.
+
+```{r ggPlot2 Plots}
+
+library(dplyr)
+library(ggplot2)
+
+#read in starwars data
+data(starwars)
+
+#Below are two sample plots - a scatterplot and a barplot. 
+
+#Try out the following for the scatterplot:
+  #1) Switch the mappings for the scatterplot so that height is on the y
+  #   axis and mass in on the x axis.
+  #2) See if you can add a new mapping between the aesthetic size and 
+  #   the variable birth_year.
+  #3) Add a color mapping to the variable of your choice!
+  #4) Add a shape mapping corresponding to gender
+
+#Scatterplot
+ggplot(data = starwars) + 
+  geom_point(mapping = aes(x = mass,
+                           y = height,
+                           size = birth_year,
+                           color = gender,
+                           shape = gender))
+
+#Now, try out the following for the barplot:
+  #1) Change the x-axis mapping to a different variable of your choice.
+  #2) Add a fill mapping to the variable of your choice.
+  #3) Remove the legend
+  #4) Add a title
+
+#Barplot
+ggplot(data = starwars) +
+  geom_bar(mapping = aes(x = homeworld,
+                         fill = species)) +
+  guides(fill = "none") + #this line removes the messy legend
+  ggtitle("Species by homeworld") #add a title
+
+#Finally, it's time to try constructing your own ggplot!
+#Using the geom_boxplot function, build a plot with the following:
+  #1) Gender on the x axis
+  #2) Height on the y axis
+  #3) Fill corresponding to gender
+
+ggplot(data = starwars) +
+  geom_boxplot(mapping = aes(x = gender,
+                             y = height,
+                             fill = gender))
+
+
+```
+
+## Exercise 3: Data wrangling
+
+Below is a short exercise on pivoting, filtering, and rearranging data.
+
+If you're stuck, take a peek at the key!
+
+```{r Data wrangling}
+
+library(tidyr)
+library(dplyr)
+
+#read in mammal sleep dataset and look at the first few lines
+data(msleep)
+head(msleep)
+
+#Try out the following:
+  #1) Using filter(), remove all observations on domesticated species (conservation column)
+  #2) Using pivot_longer(), convert this dataset to long format.
+      #Hint: think about which columns you want to reshape ("cols" argument)
+  #3) Save your filtered, pivoted dataset as a new dataset called msleep_long
+
+#Your code here
+msleep_long <- msleep |>
+  filter(conservation != "domesticated") |> #remove domesticated observations
+  pivot_longer(cols = c(sleep_total, sleep_rem, sleep_cycle, awake, brainwt, bodywt), #cols to reshape
+               names_to = "Metric", #name for variable from column data
+               values_to = "Value") #name for variable from cell data
+
+#Next, let's summarize!
+  #1) Using group_by(), group msleep by order
+  #2) Using summarize(), find the mean sleep_total value for each order
+  #3) Save your summarized dataset as a new dataset called msleep_summary
+
+#Your code here
+msleep_summary <- msleep |>
+  group_by(order) |> #group by the variable 'order'
+  summarize(mean_st_order = mean(sleep_total)) #find the mean value of sleep_total per group
+  
+#Let's try some merging!
+  #1) Add your order-averaged values (msleep_summary) to your long-format data (msleep_long) using left_join().
+  #2) Save your merged dataset as a new dataset called msleep_merged
+  
+#Your code here
+msleep_merged <- msleep_long |>
+  left_join(msleep_summary)
+  
+```
+## Exercise 4: Colorspace and Patchwork
+
+Below is a short exercise on color palettes and plot assembly.
+
+If you're stuck, take a peek at the key!
+
+```{r Advanced visualization}
+
+library(colorspace)
+library(patchwork)
+library(praise)
+
+#1) First, let's have some fun with colors (yay!)
+#Run the line below and choose a palette from the popup.
+
+pal <- choose_palette()
+pal_vals <- pal(8) #get 8 colors from that palette
+
+#And test it out on a demo plot - try different plot types!
+demoplot(pal_vals, "bar")
+
+#Next, we're going to check to see if our palette is color-palette friendly. 
+#To get you started:
+
+deutan_sim <- deutan(pal_vals)
+demoplot(deutan_sim, "bar")
+demoplot(deutan_sim, "pie")
+
+#Repeat with protan() and tritan()
+#If you can't distinguish all colors from each other, pick a different palette.
+
+protan_sim <- protan(pal_vals)
+demoplot(protan_sim, "bar")
+
+tritan_sim <- tritan(pal_vals)
+demoplot(tritan_sim, "bar")
+
+#2) Next, build two ggplots of your choice using the 'msleep' dataset (or your merged version)
+# If you're not sure where to start, try a scatterplot (geom_point) or barplot (geom_col or geom_bar)
+# Add your color palette from above using:
+    # + scale_fill_manual(values = pal_vals) or + scale_color_manual(values = pal_vals)
+# You can always add a second color palette!
+# Save these plots as two objects called 'p1' and 'p2'
+
+p1 <- ggplot(data = msleep) + 
+  geom_bar(aes(x = sleep_total, fill = vore)) +
+  scale_fill_manual(values = pal_vals)
+
+p2 <- ggplot(data = msleep) +
+  geom_point(aes(x = bodywt, y = brainwt, color = vore)) +
+  scale_color_manual(values = pal_vals)
+  
+#3) Finally, let's arrange your plots using patchwork! Try out:
+  #1) Arranging the plots in one row
+  #2) Arranging the plots in one column
+  #3) Add tag annotations to your plot
+  #4) Apply theme_bw() to both plots
+
+#plot in a row
+p1 + p2 + plot_layout(ncol = 2)
+#or
+p1 | p2
+
+#plot in a column
+p1 + p2 + plot_layout(nrow = 2)
+#or
+p1 / p2
+  
+#Tag annotations
+p1 + p2 + plot_annotation(tag_levels = "A")
+
+#Adding theme - note the parantheses!
+(p1 | p2) & theme_bw()
+  
+```
