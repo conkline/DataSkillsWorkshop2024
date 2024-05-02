@@ -1,0 +1,400 @@
+---
+title: "Spatial Data in R"
+author: "Emily Conklin"
+date: "2024-04-30"
+output: html_document
+---
+
+If you don't yet have these packages installed, you may need to un-comment and run the following:
+
+```{r install}
+
+#install.packages("dplyr")
+#install.packages("ggplot2")
+#install.packages("tidyr")
+#install.packages("sf")
+#install.packages("terra")
+#install.packages("tidyterra")
+#install.packages("praise")
+#install.packages("here)
+
+```
+
+## Exercise 2a: Introduction to vector data with sf
+
+Let's start exploring `sf` using data on moku boundaries from the state GIS data portal.\
+<https://prod-histategis.opendata.arcgis.com/datasets/HiStateGIS>::moku-ridge-to-reef-dar/explore
+
+```{r}
+
+library(here)
+library(sf)
+library(dplyr)
+library(ggplot2)
+
+#read in data using the st_read package from sf
+#NOTE - we only need to tell it about the 'shp' file
+moku <- st_read(paste0(here(), "/data/Moku_Ridge_To_Reef_(DAR).shp"))
+
+#let's take a look at the output:
+  #what geometry type is this dataset?
+  #what is the CRS?
+
+#we can get a more in-depth look at CRS using:
+st_crs(moku)
+
+```
+
+Next, let's take a closer look at our `moku` object.
+
+```{r}
+
+class(moku) #get data class
+attr(moku, "sf_column") #get column attribute
+head(moku) #get first few lines
+View(moku) #view whole dataset
+
+#And, we can quickly and easily plot these columns:
+plot(moku['mokupuni'])
+plot(moku['st_areasha'])
+
+```
+
+For analysis, we can treat `sf` objects as we would any other `data.frame`:
+
+```{r}
+
+#filter, keeping only Maui moku
+maui_moku <- moku |> 
+  filter(mokupuni == "Maui")
+
+plot(maui_moku['st_areasha'])
+
+```
+
+There are many functions for analysis included in `sf`. Let's check out a couple:
+
+```{r}
+
+#get the centroid of each Maui moku
+#we will get a warning, which we can ignore
+maui_centroids <- st_centroid(maui_moku)
+
+#what geometry type is this dataset?
+head(maui_centroids)
+
+#can we plot it? (pch=16 just makes solid circles)
+plot(maui_centroids['moku'], pch = 16)
+
+#next, draw a 10-km buffer around each centroid
+maui_buffers <- st_buffer(maui_centroids, dist = 10000)
+head(maui_buffers)
+plot(maui_buffers['moku'])
+
+```
+
+`st_centroid` and `st_buffer` are just two of many functions included in `sf`, and which to use will depend heavily on your dataset, needs, and research question.
+
+Here's a quick synopsis of available methods:
+
+```{r}
+methods(class = 'sf')
+```
+
+The built-in plotting function in `sf` works great for many purposes, but if we want a little more control and customization, we can use the `geom_sf` extension for `ggplot`:
+
+```{r}
+
+#GGplot with three layers:
+  #moku (multipolygons)W
+  #buffers (polygons)
+  #centroids (points)
+
+ggplot() +
+  geom_sf(data = maui_moku, aes(fill = moku)) +
+  geom_sf(data = maui_buffers, aes(fill = moku), alpha = 0.2) +
+  geom_sf(data = maui_centroids, color = "black")
+
+```
+
+Finally, let's try writing one of our new objects to a file.
+
+```{r}
+
+#write to shapefile
+filename = paste0(here(), "/maui_buffers.shp")
+st_write(maui_buffers, filename)
+
+#take a peek - we should have written the whole set of files needed!
+list.files(here())
+
+```
+
+## Exercise 2b: Trying out sf on your own!
+
+For this exercise, we're going to read in two datasets: Hawaiʻi streams with diverse resources, from:
+
+[https://geoportal.hawaii.gov/datasets/d4f21ffd3424403a9d082eb24c073018_15/explore](https://geoportal.hawaii.gov/datasets/d4f21ffd3424403a9d082eb24c073018_15/explore?location=21.063863%2C-156.991145%2C9.00){.uri}
+
+And Hawaiʻi Fish Aggregating Device Locations (FADs), from:
+
+[https://geoportal.hawaii.gov/datasets/575b942527f8428aa6241e6decc82893_3/explore](https://geoportal.hawaii.gov/datasets/575b942527f8428aa6241e6decc82893_3/explore?location=21.438668%2C-157.625144%2C8.00){.uri}
+
+```{r}
+
+library(here)
+library(sf)
+library(dplyr)
+library(ggplot2)
+library(praise)
+
+#read in stream data
+streams <- st_read(paste0(here(), "/data/Streams_with_Diverse_Resources.shp"))
+
+#What is the geometry type and CRS?
+
+#if we take a look at the FAD data, we'll see that it's not a shp file at all, but a csv!
+fad_table <- read.csv(paste0(here(), "/data/FAD_(Fish_Aggregating_Devices).csv"))
+
+class(fad_table)
+
+```
+
+No problem - we can convert a `dataframe` to a `sf` object using `st_as_sf`. We need two things: the coordinates (lat and lon columns) and the CRS. In this case, we know that the CRS for the FAD data is the same as the streams data - WGS84.
+
+```{r}
+
+fad_sf <- st_as_sf(fad_table, 
+                   coords = c("longitude", "latitude"), # note x goes first
+                   crs = st_crs(streams)) # projection
+
+#now it's looking like a regular point sf object!
+head(fad_sf)
+class(fad_sf)
+
+```
+
+We might be interested in using both the `moku` data and the `streams` data for an analysis. The first thing we have to do is check to see if they have the same CRS.
+
+```{r}
+
+#take a look at both
+st_crs(moku)
+st_crs(streams)
+
+#we can have R tell us if they match
+identical(st_crs(moku), st_crs(streams))
+
+```
+
+Great news - we can continue on. But let's pretend for a second that the CRS do not match, in which case we would have to reproject one of our datasets. We can do that using `st_transform`:
+
+```{r}
+
+#taking our original object, streams, and reprojecting it using the CRS from moku
+streams_tr <- st_transform(streams, crs = st_crs(moku))
+
+```
+
+Now that you have three `sf` datasets to work with (`moku`, `streams`, and `fad_sf`), you can start exploring more of the functionality of `sf`. See some suggestions in the code block below, or see the `sf` documentation for more.
+
+```{r}
+
+#Exercises to try on your own:
+  #Plot all three datasets in the same plot, using ggplot
+  #Plot a dataset over a base map from the rnaturalearth package
+  #Find the closest moku to each FAD (hint: st_nearest_feature)
+  #Extract only streams from Maui (hint: st_intersection and maui_moku)
+  #Extract only streams aboe a certain length (hint: filter)
+
+#Run below
+praise()
+
+```
+
+## Exercise 3a: Introduction to raster data with terra
+
+To start getting comfortable with `terra`, we're going to use some data from the Hawaiʻi Ocean Tipping Points project:
+
+<https://www.pacioos.hawaii.edu/projects/oceantippingpoints/#data>
+
+```{r}
+
+library(terra)
+
+#read in data using the rast function
+sst <- rast(paste0(here(), "/data/hi_otp_all_sst_clim_max.tif"))
+
+#view raster structure
+  #what is the CRS?
+  #what is the resolution?
+  #what is the extent?
+sst
+
+#plot raster
+plot(sst)
+
+```
+
+Let's dig a little further into the attributes of our raster object:
+
+```{r}
+
+#see more about the CRS
+crs(sst, describe=TRUE)
+
+#see more about the extent
+ext(sst)
+
+#see more about the resolution - be careful about units!
+#metadata tells us it's in degrees
+res(sst)
+
+```
+
+What if we're only interested in SST off in West Hawaiʻi? Let's get to cropping!
+
+```{r}
+
+#make a SpatExt (extent) object for cropping
+wh_extent <- ext(-156.3, -155.7, 19, 20)
+
+#crop our raster using the new extent
+west_hawaii_sst <- crop(sst, wh_extent)
+
+#plot to test
+plot(west_hawaii_sst)
+
+```
+
+What are the minimum and maximum values for this area?
+
+```{r}
+
+#view min and max values
+min(west_hawaii_sst)
+
+#get a histogram of all values
+hist(west_hawaii_sst)
+
+```
+
+We can also break up continuous variables into discrete classes.
+
+```{r}
+
+#add breaks to the colormap (4 breaks = 3 segments)
+#four breaks, three categories 
+brk <- c(27.266, 27.6, 28, 28.291)
+
+#new plot with three categories (low, medium, high)
+plot(west_hawaii_sst, breaks = brk)
+
+```
+
+We may also run into situations where we need a different resolution than the one we have, either for plotting or analysis reasons. `Aggregate` can be used to create a new SpatRaster with a lower resolution (larger cells), using a user-specified function.
+
+```{r}
+
+#making a new raster of West Hawaiʻi SST with 5x coarser resolution
+#averaging over cells
+wh_low_res <- aggregate(west_hawaii_sst, fact = 5, fun = "mean")
+
+plot(wh_low_res)
+
+```
+
+We can also use `disagg` to create a new SpatRaster with a higher resolution (smaller cells). Here, we are interpolating values using `method = "bilinear"`. If instead you'd like to new cells to keep the same value as the original larger cells, use `method = "near"`.
+
+```{r}
+
+#making a new raster of West Hawaiʻi SST with 5x finer resolution
+wh_high_res <- disagg(west_hawaii_sst, fact = 5, method = "bilinear")
+
+plot(wh_high_res)
+
+```
+
+## Exercise 3b: Trying out terra on your own!
+
+For this exercise, we're going to read in three more datasets from:
+
+<https://www.pacioos.hawaii.edu/projects/oceantippingpoints/#data>
+
+These are rasters total effluent, nitrogen, and phosphorous estimates in coastal waters.
+
+```{r}
+library(terra)
+library(here)
+library(praise)
+
+#read in raster data
+effluent <- rast(paste0(here(), "/data/hi_otp_all_osds_effluent.tif"))
+nitro <- rast(paste0(here(), "/data/hi_otp_all_osds_nitrogen.tif"))
+phos <- rast(paste0(here(), "/data/hi_otp_all_osds_phosphorus.tif"))
+
+#let's check them out via plot()
+plot(effluent)
+plot(nitro)
+plot(phos)
+
+#a little hard to see - let's crop to windward oahu
+oahu_extent <- ext(-158, -157.7, 21.4, 21.7)
+
+oahu_effluent <- crop(effluent, oahu_extent)
+oahu_nitro <- crop(nitro, oahu_extent)
+oahu_phos <- crop(phos, oahu_extent)
+
+#plot cropped rasters
+plot(oahu_effluent)
+plot(oahu_nitro)
+plot(oahu_phos)
+
+```
+
+But wait - just like before, we need to double check that everything has the same CRS.
+
+```{r}
+
+#check crs
+identical(crs(oahu_effluent), crs(oahu_nitro))
+identical(crs(oahu_effluent), crs(oahu_phos))
+
+```
+
+Looks good! If they were different, just like with `sf`, we can reproject rasters onto a new projection. For rasters, you can use the function `project`:
+
+<https://rspatial.github.io/terra/reference/project.html>
+
+Although I'm only going to touch on this package, `tidyterra` is great, as it allows us to use the tidyverse and ggplot2 functions we know and love with raster objects. Here's a quick example:
+
+```{r}
+library(tidyterra)
+library(ggplot2)
+
+#plot raster data with ggplot!
+ggplot() +
+  geom_spatraster(data = oahu_effluent)
+
+```
+
+Now that you have several rasters to work with, try exploring on your own! See some suggestions in the code block below, or see the `terra` and `tidyterra` documentation for more.
+
+```{r}
+
+#Exercises to try on your own:
+  #Plot sf data and raster data together, using tidyterra and ggplot
+  #Change the resolution of a raster (hint: aggregate or disagg)
+  #Make a histogram of raster values (hint: hist())
+  #Subtract one raster from another (hint: -)
+  #Add two rasters together (hint: +)
+  #Calculate mean SST per moku
+    #Hint 1: You will first need to convert 'moku' to a SpatVector using vect(moku)
+    #Hint 2: You can use extract() to get mean values per polygon.
+    #If you get stuck, see https://www.paulamoraga.com/tutorial-terra/
+  
+#Run below
+praise()
+
+```
+
