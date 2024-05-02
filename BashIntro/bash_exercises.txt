@@ -1,0 +1,152 @@
+Emily Conlin & Maddie Emms
+Data skills for biology workshop, May 2024
+Day 1, Thursday 2nd
+
+Github session material link: https://rb.gy/l5ee6e
+
+###########################################################################
+
+EXERCISE #1 Navigating the command line
+
+###########################################################################
+
+Download additional file:
+01data_seq-workshop_beyonce-lyrics.tsv
+
+1. Open up your terminal application and navigate to the location of your files:
+	cd /home/username [Linux/Mac]
+	cd /mnt/c/Users/username [Windows with WSL]
+
+2. Take a look (ls) at the folders and files already in this directory. Take a look at ls --help,
+   and try out some of the options. What changes?
+
+3. Explore a little - practice navigating into directories (cd) and back up (cd ..) or further (cd ../..) and back (cd -)
+   Periodically stop to check where you are (pwd)
+
+4. Make a new directory called my_temp_dir (mkdir), make a new file (touch) within it and then delete the directory (rm -r)
+
+5. Make a new directory with a more informative name
+
+6. Navigate to the location of your downloaded file "01data_seq-workshop_beyonce-lyrics.tsv" (in your Downloads folder?) using only the command
+   line. No Finder / File Explorer allowed!
+
+7. Move this file to the new directory you just created (mv), and navigate to the new directory (cd)
+
+8. Make two copies of this file (cp), and name them "aeyonce.tsv" and "ceyonce.tsv". 
+
+9. Delete the file named "aeyonce.tsv" (rm)
+
+10. You should have two files left. Rename "ceyonce.tsv" as "beyonce.tsv" (mv)
+
+Great job, you're now a command-line navigator! 
+
+###########################################################################
+
+EXERCISE #2 Exploring your files
+
+###########################################################################
+
+1. You should still be in the above folder with two beyonce files left. Take a look at both (less) typing q to exit. Also explore (more), and see how the commands differ (combination of arrow keys and enter button, one prints one does not)
+
+2. Print the first five lines (head -n) and last eight lines (tail -n)
+
+3. Print the file cutting off the last 9 lines. The last two printed lines should be repeats. 
+
+4. Print the top 10 lines except the first one (|)
+
+5. How many lines are in each file (wc -l)? 
+
+6. Play with viewing/editing beyonce.tsv with vim or nano
+
+7. Add the word 'jayz' somewhere in the file, either on a new line or within an existing line, and save as jayzbeyonce.tsv
+
+Great job checking out your files! We'll use that later
+
+###########################################################################
+
+EXERCISE #3 More data manipulation
+
+###########################################################################
+
+1. Have a go at making (=), and printing (echo) an alpha-numeric variable
+
+2. Print the last line of beyonce.tsv (tail -n) and append it to the bottom of jayzbeyonce.tsv (>>). How many lines is the latter file now?
+
+3. Print out any sentence (echo) and write it to a new file (>)
+
+4. Using cat and >, try concatenating your new sentence file and file jayzbeyonce.tsv into a new file. How many lines is that? Print the beyonce.tsv and jayzbeyonce.tsv files next to each other (paste) and see the difference with this command
+
+5. Print column of song names ie the second column of file "01data_seq-workshop_beyonce-lyrics.tsv" (cut -f). Which song has the most lyric lines (uniq -c)?
+
+6. Print the column of lyrics ie the first column of file "01data_seq-workshop_beyonce-lyrics.tsv" (cut -f). Without sorting, whats the most repeats of any single lyric line? Is the answer what you expected? Remembering to sort first, which lyric line is repeated the most (sort, uniq -c)?
+
+Great job learning how to create variables and extract info!
+
+###########################################################################
+
+EXERCISE #4 Introducing 2 powerful tools
+
+###########################################################################
+
+1. Using grep, what line number did you add the word 'jayz' to in the file jayzbeyonce.tsv ?
+
+2. Using grep, see if you can find all the song lyrics in "01data_seq-workshop_beyonce-lyrics.tsv" from the song "Single Ladies"
+
+3. Use > to save the output to a new file "single_ladies.tsv"
+
+4. Choose any other word from the song and make it a variable. Use grep with the variable to count how many lines of the song "Single Ladies" contain that word.
+
+5. Type the command grep --help to look at all the available options and try some out if you like - what happens? 
+
+6. Take a moment to look at the following command:
+
+   sed 's/ladies/fellas/' single_ladies.tsv > single_fellas.tsv
+
+   Before you run it, see if you can explain in words what you expect it to do.
+   Then, run the command and take a look at the output file (less). Can you see a difference?
+
+7. Re-run the last command, but see if you can tweak the command to get it to replace ALL
+   instances of the word "ladies", not just the first in a line. Take a look at the output again.
+
+8. Now, try writing your own sed command to replace a word of your choice with another word of your choice.
+   Remember to use > to make a new output file.
+
+9. Next, we'll try editing single_ladies.tsv in-place to remove all left parentheses "(". Remember: you
+   will need to use the -i flag, but what will our 'replacement' section look like?
+
+10. Finally, take a moment to look at this command:
+   
+   sed -i 's/^/Oooh/' single_ladies.tsv
+
+   Break it down into parts - what do you expect to happen?
+
+Good work, file editing pro!
+
+###########################################################################
+
+EXERCISE #5  To take away
+
+###########################################################################
+
+Now that you've played with some command line tools, let's move from Beyonce to bioinformatics.
+Regardless of the type of file, you can still use the same tools!
+
+1. Download the file "01data_seq-workshop_fish-co1.fasta" from Github and, using the command line, move it into
+   your working directory. This is CO1 data from the FDA on seafood identification
+   (https://www.accessdata.fda.gov/scripts/fdcc/).
+
+2. Without manually counting, how might you figure out how many sequences are in 
+   your file? Hint: Use grep and wc -l; each sequence starts with a ">" symbol.
+
+3. How many unique sequences do you have? Note: "grep -v" will invert your search.
+
+4. Say you are only interested in the FASTA entries for Caranx species. Using grep,
+   how might you go about this? Note: "grep -A1" will keep the line containing the match as well
+   as the one below it. 
+
+5. Pretend that you are prepping this data for a piece of software that, for whatever reason, will
+   break if there are any underscores in your FASTA file. Using sed, how might you go about
+   removing them?
+
+I hope we have convinced you that command line tools are a fast, powerful way to explore your data!
+Keep practicing!
