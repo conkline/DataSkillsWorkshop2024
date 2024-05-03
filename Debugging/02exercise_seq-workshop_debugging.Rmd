@@ -1,0 +1,191 @@
+---
+title: "Debugging_Exercises"
+author: "Emily Conklin"
+date: "5/1/2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#install.packages("reprex")
+#install.packages("ggplot2")
+#install.packages("dplyr")
+
+```
+
+## Exercise 1: Data Types and Structures
+
+Some empty data structures are provided - fill them with data and follow the commented instructions
+
+```{r}
+
+#First, create a vector named int_vector that holds 5 numbers
+#Next, create a vector nmed char_vector that holds 5 letters
+#Remember to put your letters in quotes ""
+
+int_vector <- c()
+char_vector <- c()
+
+#Examine each vector using typeof(). 
+typeof()
+
+```
+
+```{r}
+
+#Next, we'll build a dataframe containing int_vector and char_vector from the last step
+#This dataframe has two variables: "int" and "char"
+
+df <- data.frame("int" = int_vector, "char" = char_vector)
+
+#Examine your dataframe with class() and typeof()
+
+#You can select a specific column using $: dataframe_name$column_name
+#Use class() and typeof() on each column in your dataframe
+
+```
+
+```{r}
+
+#Next, try to create a new vector (comb_vector) containing 3 numbers and 3 letters
+#What happens? 
+
+comb_vector <- c()
+comb_vector #prints out contents of comb_vector
+
+#What does this vector look like with typeof()?
+typeof()
+
+```
+
+```{r}
+#Consider the following lines of code before you run them - what do you expect?
+
+typeof(TRUE)
+typeof("TRUE")
+typeof(NA)
+typeof(NaN)
+typeof("NA")
+
+```
+
+```{r}
+
+#Finally, build a list containing 'comb_vector' and 'df' from earlier in the exercise
+
+comb_list <- list()
+
+#What are the outputs of class() and typeof() for comb_list?
+
+
+#You can select a specific item in your list using [[]]: list_name[[1]]
+#What are the outputs of class() and typeof() for different items in your list?
+
+
+```
+
+## Exercise 2: Stack Trace
+
+Stack traces are a useful way to keep track of variables, especially when your code
+isn't behaving as predicted, or when you're trying to make sense of someone else's 
+code. To do a stack trace by hand, we can set up our variables on the left and the
+"stack" (memory) on the right. 
+
+We'll read it bottom to top, and "push" new variables to the top of the stack as we go.
+
+```{r Stack Trace}
+
+# We'll do this stack trace as a group, reading through the code and adding 
+# to our stack trace as we go.
+
+# !! DON'T RUN THIS CODE UNTIL AFTER THE STACK TRACE !!
+
+fruits <- c("papaya", "breadfruit")
+nums <- c(2, 4, 7)
+
+for (i in 1:2){
+  
+  j <- i + nums[i]
+  
+  statement <- paste("We have", i, fruits[1], "and", j, fruits[2])
+  print(statement)
+  
+}
+
+```
+
+## Exercise 3: Reprex
+
+Here, we have a chunk of code that produces an error. Your job is to build a minimum reproducible example, formatted with the reprex library. Once you have your reprex, see if you can figure out what's causing the error.
+
+Remember, your goal when building your reprex is to find the minimum amount of code that still reproduces the error - get rid of any packages, data, or function calls you don't need.
+
+The library "reprex" is handy - once you build a reprex, you can copy it to your clipboard and run the command reprex(). This will do two things:
+
+1) Test your code to see if it's actually reproducible (and produce other errors if not)
+2) Format it nicely, so it can be easily pasted to StackOverflow or somewhere similar
+
+```{r Original Code}
+
+##### ORIGINAL CODE HERE
+
+#load libraries
+library(dplyr)
+library(reprex)
+library(ggplot2)
+
+#load data
+data(mtcars)
+data(starwars)
+
+#sort mtcars by horsepower
+mtcars <- mtcars %>%
+  arrange(hp)
+
+#find average # cylinders for cars with at least 100 horsepower
+avg_cylinders <- mtcars %>%
+  mutate(car_owner = starwars$name[1:32]) %>%
+  mutate(make = row.names(mtcars)) %>% 
+  filter(hp >= 100) %>%
+  summarize(mean(cylinders))
+```  
+
+```{r Reprex}
+
+##### YOUR REPREX HERE
+
+
+
+# Copy your reprex to your clipboard, then run the next line to test + format
+reprex()
+
+```
+
+## Exercise 4: Debugging
+
+We're going to try out the simplest R debugging tool, traceback(). This example comes from the Advanced R site if you're interested in a more detailed debugging tutorial:
+https://adv-r.hadley.nz/debugging.html
+
+```{r}
+
+#Here’s a simple example: you can see that f() calls g() calls h() calls i(), which checks if its argument is numeric:Function f calls function g 
+
+f <- function(a) g(a)
+g <- function(b) h(b)
+h <- function(c) i(c)
+i <- function(d) {
+  if (!is.numeric(d)) {
+    stop("`d` must be numeric", call. = FALSE)
+  }
+  d + 10
+}
+
+#When we run this function, we get an error:
+f("a")
+
+#Call "traceback" to see the path to the error:
+traceback()
+
+```
+
